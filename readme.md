@@ -13,7 +13,7 @@ compress images to 4mb for obsidian vault syncing. works as pwa and can be packa
 ## usage
 
 ### web/pwa
-- visit the github pages link
+- visit https://faeller.github.io/obsidian-sync-compressor/www
 - select your obsidian vault folder
 - drop images or click to select
 - compress & save
