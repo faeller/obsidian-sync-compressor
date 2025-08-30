@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple File Manager</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        function FileManager() {
+            const [dirHandle, setDirHandle] = useState(null);
+            const [status, setStatus] = useState('No folder selected');
+            const [files, setFiles] = useState([]);
+
+            // Select a folder
+            const selectFolder = async () => {
+                try {
+                    const handle = await window.showDirectoryPicker();
+                    setDirHandle(handle);
+                    setStatus(`Folder selected: ${handle.name}`);
+                    await listFiles(handle);
+                } catch (err) {
+                    setStatus('Folder selection cancelled');
+                }
+            };
+
+            // List files in the directory
+            const listFiles = async (handle) => {
+                const fileList = [];
+                for await (const entry of handle.values()) {
+                    if (entry.kind === 'file') {
+                        fileList.push(entry.name);
+                    }
+                }
+                setFiles(fileList);
+            };
+
+            // Create sample markdown files
+            const createFiles = async () => {
+                if (!dirHandle) {
+                    setStatus('Please select a folder first');
+                    return;
+                }
+
+                try {
+                    const sampleFiles = [
+                        { name: 'document1.md', content: '# Document 1\n\nThis is the first document.' },
+                        { name: 'notes.md', content: '# Notes\n\n- Important point 1\n- Important point 2' },
+                        { name: 'readme.md', content: '# README\n\nWelcome to this project!' },
+                        { name: 'todo.md', content: '# TODO List\n\n- [ ] Task 1\n- [ ] Task 2' }
+                    ];
+
+                    for (const file of sampleFiles) {
+                        const fileHandle = await dirHandle.getFileHandle(file.name, { create: true });
+                        const writable = await fileHandle.createWritable();
+                        await writable.write(file.content);
+                        await writable.close();
+                    }
+
+                    setStatus(`Created ${sampleFiles.length} markdown files`);
+                    await listFiles(dirHandle);
+                } catch (err) {
+                    setStatus(`Error creating files: ${err.message}`);
+                }
+            };
+
+            // Rename all files with a pattern
+            const renameFiles = async () => {
+                if (!dirHandle) {
+                    setStatus('Please select a folder first');
+                    return;
+                }
+
+                try {
+                    const prefix = prompt('Enter prefix for files (e.g., "project_"):', 'new_');
+                    if (!prefix) return;
+
+                    let count = 1;
+                    const filesToRename = [];
+                    
+                    // Collect all markdown files
+                    for await (const entry of dirHandle.values()) {
+                        if (entry.kind === 'file' && entry.name.endsWith('.md')) {
+                            filesToRename.push(entry);
+                        }
+                    }
+
+                    // Rename each file
+                    for (const entry of filesToRename) {
+                        const oldHandle = await dirHandle.getFileHandle(entry.name);
+                        const content = await (await oldHandle.getFile()).text();
+                        
+                        const newName = `${prefix}${count}.md`;
+                        const newHandle = await dirHandle.getFileHandle(newName, { create: true });
+                        const writable = await newHandle.createWritable();
+                        await writable.write(content);
+                        await writable.close();
+                        
+                        // Delete old file if different name
+                        if (entry.name !== newName) {
+                            await dirHandle.removeEntry(entry.name);
+                        }
+                        
+                        count++;
+                    }
+
+                    setStatus(`Renamed ${filesToRename.length} files with prefix "${prefix}"`);
+                    await listFiles(dirHandle);
+                } catch (err) {
+                    setStatus(`Error renaming files: ${err.message}`);
+                }
+            };
+
+            return (
+                <div className="p-8 max-w-2xl mx-auto">
+                    <h1 className="text-3xl font-bold mb-6">Simple File Manager</h1>
+                    
+                    <div className="space-y-4">
+                        <button
+                            onClick={selectFolder}
+                            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                        >
+                            Select Folder
+                        </button>
+
+                        <button
+                            onClick={createFiles}
+                            disabled={!dirHandle}
+                            className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 disabled:bg-gray-300 ml-2"
+                        >
+                            Create Sample Files
+                        </button>
+
+                        <button
+                            onClick={renameFiles}
+                            disabled={!dirHandle}
+                            className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 disabled:bg-gray-300 ml-2"
+                        >
+                            Rename All Files
+                        </button>
+                    </div>
+
+                    <div className="mt-6 p-4 bg-gray-100 rounded">
+                        <p className="font-semibold">Status:</p>
+                        <p className="text-sm">{status}</p>
+                    </div>
+
+                    <div className="mt-6">
+                        <h2 className="text-xl font-semibold mb-2">Files in folder:</h2>
+                        {files.length > 0 ? (
+                            <ul className="list-disc list-inside">
+                                {files.map((file, idx) => (
+                                    <li key={idx} className="text-sm">{file}</li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p className="text-gray-500 text-sm">No files to display</p>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<FileManager />, document.getElementById('root'));
+    </script>
+</body>
+</html>

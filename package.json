@@ -1,0 +1,26 @@
+{
+  "name": "obsidian-sync-compressor",
+  "version": "1.0.0",
+  "description": "Compress images for Obsidian vault syncing",
+  "main": "obsidian-sync-compressor.html",
+  "scripts": {
+    "build": "echo 'No build step needed'",
+    "android": "cap run android",
+    "ios": "cap run ios",
+    "sync": "cap sync",
+    "open:android": "cap open android",
+    "open:ios": "cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/filesystem": "^6.0.0",
+    "@capacitor/share": "^6.0.0",
+    "@capacitor/preferences": "^6.0.0",
+    "@capacitor/camera": "^6.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0",
+    "typescript": "^5.9.2"
+  }
+}
